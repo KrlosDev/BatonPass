@@ -562,6 +562,34 @@ npm run build:win   # Windows (nsis + portable)
 npm run build:mac   # macOS (dmg) - must be run on a Mac
 ```
 
+### Cutting a release
+
+The download page links at `/releases/latest` and promises three files - a
+Windows installer, a Windows portable and a macOS dmg. The last of those cannot
+be built on Windows, so releases are cut by CI rather than by hand:
+
+```bash
+# version in package.json and the tag must agree
+npm version 0.1.1        # bumps package.json, commits, tags v0.1.1
+git push --follow-tags
+```
+
+[`.github/workflows/release.yml`](.github/workflows/release.yml) then builds on
+`windows-latest` and `macos-latest` in parallel and uploads to **a draft
+release**, which you review and publish yourself from the Releases page.
+Nothing is public until you press the button, so a half-finished matrix is never
+visible.
+
+Assets are named `BatonPass-<version>-<os>-<arch>-<kind>.<ext>`, set per target
+in [`package.json`](package.json) - electron-builder's defaults put spaces in
+`.exe` names, which turn into `%20` in a download URL.
+
+**The builds are unsigned.** There is no Apple Developer certificate and no
+Windows code-signing certificate wired in, so SmartScreen will warn on the
+`.exe` and macOS will refuse the `.dmg` until it is opened via right-click →
+Open. Signing is the one thing that cannot be added from the repo alone; it
+needs paid certificates and a pair of repository secrets.
+
 Icons live in `assets/` and are **derived from source artwork**, not hand-
 exported. `npm run icons` reads `assets/tray_icon.png`, crops the artwork out of
 whatever canvas it was exported on, and writes all four shipped files:

@@ -1,0 +1,45 @@
+name: Release
+
+# Tag-driven. The tag is the trigger and the version marker; electron-builder
+# reads the version from package.json, so the two must agree (tag v0.1.0 ->
+# "version": "0.1.0"). workflow_dispatch is here for a re-run after a failure
+# on one platform, without moving the tag.
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+# The default GITHUB_TOKEN needs write access to create the release and upload
+# assets to it.
+permissions:
+  contents: write
+
+jobs:
+  build:
+    # macOS installers can only be built on macOS, so the full set of files the
+    # download page promises needs both runners. fail-fast off: one platform
+    # failing shouldn't throw away a good build from the other.
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            script: build:win
+          - os: macos-latest
+            script: build:mac
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      # --publish always uploads to the draft release named after the tag,
+      # creating it on the first job and appending on the second.
+      - run: npm run ${{ matrix.script }} -- --publish always
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
