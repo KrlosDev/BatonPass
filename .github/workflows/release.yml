@@ -2,8 +2,8 @@ name: Release
 
 # Tag-driven. The tag is the trigger and the version marker; electron-builder
 # reads the version from package.json, so the two must agree (tag v0.1.0 ->
-# "version": "0.1.0"). workflow_dispatch is here for a re-run after a failure
-# on one platform, without moving the tag.
+# "version": "0.1.0"). workflow_dispatch is here to re-run against an existing
+# tag after a failure, without having to move the tag.
 on:
   push:
     tags: ['v*']
@@ -38,8 +38,60 @@ jobs:
 
       - run: npm ci
 
-      # --publish always uploads to the draft release named after the tag,
-      # creating it on the first job and appending on the second.
-      - run: npm run ${{ matrix.script }} -- --publish always
+      # --publish never: the builders must not touch the release. Two jobs
+      # running at once both find no draft for the tag and both create one, so
+      # letting either publish produces two half-filled releases. Building to
+      # disk and releasing once, below, is what makes that impossible.
+      - run: npm run ${{ matrix.script }} -- --publish never
+
+      # Installers and their update metadata only - dist/ also holds the
+      # unpacked app directories, which are large and not worth shipping.
+      - uses: actions/upload-artifact@v4
+        with:
+          name: installers-${{ matrix.os }}
+          if-no-files-found: error
+          path: |
+            dist/*.exe
+            dist/*.dmg
+            dist/*.blockmap
+            dist/latest*.yml
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    # Only a tag can name a release. On a workflow_dispatch from a branch the
+    # builds still run and their artifacts are downloadable from the run page.
+    if: startsWith(github.ref, 'refs/tags/')
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: installers
+          pattern: installers-*
+          merge-multiple: true
+
+      # gh needs no checkout when it is told which repo to act on.
+      - name: Create the draft release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          cat > notes.md <<'EOF'
+          Needs the Claude Code CLI already installed.
+
+          | download | for |
+          |---|---|
+          | `-win-x64-setup.exe` | Windows, installed |
+          | `-win-x64-portable.exe` | Windows, no install |
+          | `-mac-arm64.dmg` | Apple Silicon |
+          | `-mac-x64.dmg` | Intel Mac |
+
+          **These builds are unsigned.** On Windows SmartScreen will warn: More
+          info -> Run anyway. On macOS the first launch must be right-click ->
+          Open; a double-click is blocked.
+          EOF
+          gh release create "$TAG" \
+            --draft \
+            --title "${TAG#v}" \
+            --notes-file notes.md \
+            installers/*
