@@ -1,7 +1,7 @@
 {
   "name": "batonpass",
   "productName": "BatonPass",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Desktop widget that shows how full each Claude Code chat's context window is, and hands a chat off to a fresh session in a new terminal before it runs out of room.",
   "private": true,
   "main": "main.js",
