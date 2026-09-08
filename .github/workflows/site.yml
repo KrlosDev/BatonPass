@@ -1,0 +1,43 @@
+name: Deploy site
+
+# Only the site rebuilds on a site change. App-only commits skip this entirely.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'site/**'
+      - '.github/workflows/site.yml'
+  workflow_dispatch:
+
+# Required by actions/deploy-pages: id-token is what proves the deployment came
+# from this workflow run.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Never let two deploys race, but don't cancel one that is already publishing.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build with Astro
+        uses: withastro/action@v3
+        with:
+          path: ./site
+          node-version: 20
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

@@ -1,0 +1,71 @@
+---
+interface Props {
+  platform: string;
+  detail: string;
+  formats: string;
+  href: string;
+}
+
+const { platform, detail, formats, href } = Astro.props;
+---
+
+<a class="card" href={href} rel="noopener">
+  <span class="platform">{platform}</span>
+  <span class="detail">{detail}</span>
+  <span class="formats mono">{formats}</span>
+  <span class="go" aria-hidden="true">↓</span>
+</a>
+
+<style>
+  .card {
+    display: grid;
+    gap: 0.35rem;
+    position: relative;
+    padding: 1.6rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: linear-gradient(180deg, rgb(255 255 255 / 0.04), rgb(255 255 255 / 0.01));
+    text-decoration: none;
+    transition:
+      transform 160ms ease,
+      border-color 160ms ease,
+      box-shadow 160ms ease;
+  }
+
+  .card:hover {
+    transform: translateY(-3px);
+    border-color: var(--border-bright);
+    box-shadow: 0 18px 50px -22px rgb(62 232 160 / 0.55);
+  }
+
+  .platform {
+    font-size: 1.3rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+
+  .detail {
+    color: var(--text-dim);
+    font-size: 0.95rem;
+  }
+
+  .formats {
+    margin-top: 0.4rem;
+    font-size: 0.78rem;
+    color: var(--accent-bright);
+    letter-spacing: 0.04em;
+  }
+
+  .go {
+    position: absolute;
+    top: 1.5rem;
+    right: 1.6rem;
+    color: var(--accent-bright);
+    font-size: 1.2rem;
+    transition: transform 160ms ease;
+  }
+
+  .card:hover .go {
+    transform: translateY(3px);
+  }
+</style>

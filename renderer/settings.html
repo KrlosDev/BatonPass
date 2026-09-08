@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en" data-window="settings">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline';" />
+    <title>BatonPass settings</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <main class="panel">
+      <div class="panel-content">
+
+        <header class="panel-header">
+          <h1>Settings</h1>
+          <button id="settings-close" title="Close" aria-label="Close">✕</button>
+        </header>
+
+        <h3 class="settings-group">Colour</h3>
+        <div class="color-row">
+          <label for="accent-input">Bars &amp; rings</label>
+          <span class="color-hex" id="accent-hex">#12a37d</span>
+          <input type="color" id="accent-input" value="#12a37d" />
+        </div>
+        <p class="settings-help color-help" id="color-help" hidden></p>
+        <div class="color-row">
+          <button id="colors-reset" class="link-btn" type="button">Reset</button>
+        </div>
+
+        <!-- Hidden where no terminal can be opened (anything but Windows and
+             macOS), rather than offering a choice that does nothing. -->
+        <div id="terminal-section" hidden>
+          <h3 class="settings-group">Terminal</h3>
+          <div class="select-row">
+            <label for="terminal-select">Open chats in</label>
+            <select id="terminal-select"></select>
+          </div>
+          <p class="settings-help">
+            Where handed-off and reopened chats open. Automatic uses the terminal
+            each chat was last seen in.
+          </p>
+        </div>
+
+        <!-- Hidden entirely on platforms where Electron can't register a
+             login item, rather than showing a toggle that does nothing. -->
+        <div id="startup-section" hidden>
+          <h3 class="settings-group">Startup</h3>
+          <div class="widget-toggles">
+            <label class="widget-toggle">
+              <input type="checkbox" id="startup-toggle" />
+              <span>Open BatonPass at login</span>
+            </label>
+          </div>
+          <p class="settings-help startup-help" id="startup-help" hidden></p>
+        </div>
+
+      </div>
+    </main>
+
+    <script src="shared.js"></script>
+    <script src="settings.js"></script>
+  </body>
+</html>

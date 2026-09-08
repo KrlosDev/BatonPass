@@ -1,0 +1,56 @@
+{
+  "name": "batonpass",
+  "productName": "BatonPass",
+  "version": "0.1.0",
+  "description": "Desktop widget that shows how full each Claude Code chat's context window is, and hands a chat off to a fresh session in a new terminal before it runs out of room.",
+  "private": true,
+  "main": "main.js",
+  "author": "krlosdev",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "generate-icons": "node scripts/generate-icons.js",
+    "icons": "node scripts/derive-icons.js",
+    "site:assets": "node scripts/site-assets.js",
+    "postinstall": "node scripts/generate-icons.js",
+    "build:win": "electron-builder --win",
+    "build:mac": "electron-builder --mac"
+  },
+  "build": {
+    "appId": "dev.krlosdev.batonpass",
+    "productName": "BatonPass",
+    "files": [
+      "main.js",
+      "preload.js",
+      "lib/**/*",
+      "renderer/**/*",
+      "assets/**/*"
+    ],
+    "directories": {
+      "output": "dist"
+    },
+    "asarUnpack": [
+      "**/node_modules/koffi/**"
+    ],
+    "mac": {
+      "category": "public.app-category.utilities",
+      "target": [
+        "dmg"
+      ]
+    },
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ]
+    }
+  },
+  "devDependencies": {
+    "electron": "^44.1.1",
+    "electron-builder": "^26.15.3",
+    "pngjs": "^7.0.0"
+  },
+  "dependencies": {
+    "koffi": "^3.2.0"
+  }
+}

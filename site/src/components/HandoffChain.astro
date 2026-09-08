@@ -1,0 +1,118 @@
+---
+const steps = [
+  { name: 'summarise', note: 'the chat writes its own handoff' },
+  { name: 'validate', note: 'too short? nothing happens' },
+  { name: 'save', note: 'written to ~/.claude/handoffs' },
+  { name: 'launch', note: 'new terminal, same folder' },
+  { name: 'mark', note: 'the handover is recorded' },
+  { name: 'kill', note: 'the old chat stops' },
+];
+
+// Everything before this index can fail without costing you anything.
+const boundary = 3;
+---
+
+<ol class="chain">
+  {
+    steps.map((step, i) => (
+      <>
+        {i === boundary && (
+          <li class="boundary" aria-hidden="true">
+            <span class="rule" />
+            <span class="boundary-label mono">nothing irreversible above this line</span>
+          </li>
+        )}
+        <li class={i < boundary ? 'step safe' : 'step'}>
+          <span class="idx mono">{String(i + 1).padStart(2, '0')}</span>
+          <span class="name mono">{step.name}</span>
+          <span class="note">{step.note}</span>
+        </li>
+      </>
+    ))
+  }
+</ol>
+
+<style>
+  .chain {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 0.5rem;
+  }
+
+  .step {
+    display: grid;
+    grid-template-columns: auto minmax(88px, auto) 1fr;
+    align-items: baseline;
+    gap: 1rem;
+    padding: 0.85rem 1.1rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: rgb(255 255 255 / 0.02);
+  }
+
+  /* The reversible half carries the accent; the rest is deliberately plain, so
+     the colour itself tells you where the point of no return is. */
+  .step.safe {
+    border-color: rgb(62 232 160 / 0.3);
+    background: rgb(62 232 160 / 0.05);
+  }
+
+  .idx {
+    font-size: 0.75rem;
+    color: var(--text-dim);
+  }
+
+  .name {
+    font-weight: 600;
+    font-size: 1rem;
+    color: var(--ink);
+  }
+
+  .step.safe .name {
+    color: var(--accent-bright);
+  }
+
+  .note {
+    color: var(--text-dim);
+    font-size: 0.9rem;
+  }
+
+  .boundary {
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
+    padding-block: 0.6rem;
+  }
+
+  .rule {
+    flex: 1;
+    height: 1px;
+    background: repeating-linear-gradient(
+      90deg,
+      var(--border-bright) 0 6px,
+      transparent 6px 12px
+    );
+  }
+
+  .boundary-label {
+    font-size: 0.72rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--accent-bright);
+    white-space: nowrap;
+  }
+
+  @media (max-width: 560px) {
+    .step {
+      grid-template-columns: auto 1fr;
+    }
+    .note {
+      grid-column: 2;
+    }
+    .boundary-label {
+      white-space: normal;
+    }
+  }
+</style>

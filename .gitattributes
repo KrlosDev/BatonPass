@@ -1,0 +1,8 @@
+# Normalise to LF in the repository. Without this, committing from Windows
+# stores CRLF and every macOS or Linux contributor sees whole files as changed.
+* text=auto eol=lf
+
+# Binary artwork must never be line-ending converted.
+*.png binary
+*.ico binary
+*.icns binary

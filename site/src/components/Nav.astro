@@ -1,0 +1,85 @@
+---
+import { Image } from 'astro:assets';
+import mark from '../assets/mark.png';
+import { REPO } from '../config';
+---
+
+<header class="nav">
+  <div class="shell nav-inner">
+    <a class="brand" href="#top">
+      <Image src={mark} alt="BatonPass" width={104} densities={[1, 2]} />
+    </a>
+    <nav class="links">
+      <a href="#how">How it works</a>
+      <a href="#local">Local by design</a>
+      <a class="ghost" href={REPO} rel="noopener">GitHub</a>
+      <a class="cta" href="#download">Download</a>
+    </nav>
+  </div>
+</header>
+
+<style>
+  .nav {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    backdrop-filter: blur(14px);
+    background: rgb(11 12 14 / 0.72);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .nav-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding-block: 0.7rem;
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    line-height: 0;
+  }
+
+  .links {
+    display: flex;
+    align-items: center;
+    gap: 1.6rem;
+    font-size: 0.92rem;
+  }
+
+  .links a {
+    text-decoration: none;
+    color: var(--text-dim);
+    transition: color 140ms ease;
+    white-space: nowrap;
+  }
+
+  .links a:hover {
+    color: var(--ink);
+  }
+
+  .cta {
+    padding: 0.45rem 1rem;
+    border-radius: 999px;
+    background: var(--accent);
+    color: #04120d !important;
+    font-weight: 600;
+  }
+
+  .cta:hover {
+    background: var(--accent-bright);
+  }
+
+  /* Below this the four links crowd the mark, so the two anchors that only
+     scroll the page step aside and the two that matter stay. */
+  @media (max-width: 640px) {
+    .links a:not(.cta):not(.ghost) {
+      display: none;
+    }
+    .links {
+      gap: 1rem;
+    }
+  }
+</style>

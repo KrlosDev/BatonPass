@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en" data-window="widget">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline';" />
+    <title>BatonPass</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <main class="panel">
+      <div class="panel-content">
+
+        <!-- No settings button here: settings is the tray flyout. This header
+             is purely the drag handle. -->
+        <header class="panel-header">
+          <h1>Chat context</h1>
+        </header>
+
+        <!-- Buttons rather than links: the global no-drag rule already covers
+             them, so they stay clickable beside the drag handle above. -->
+        <nav class="tab-strip">
+          <button class="tab is-selected" data-tab="active" type="button">Active</button>
+          <button class="tab" data-tab="handed" type="button">Handed over</button>
+        </nav>
+
+        <div id="session-list" class="session-list"></div>
+
+        <footer class="panel-footer">
+          <span id="status-line">Loading...</span>
+          <button id="refresh-btn" title="Refresh now" aria-label="Refresh now">↻</button>
+        </footer>
+
+      </div>
+    </main>
+
+    <script src="shared.js"></script>
+    <script src="widget.js"></script>
+  </body>
+</html>

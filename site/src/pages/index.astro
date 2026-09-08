@@ -1,0 +1,347 @@
+---
+import { Image } from 'astro:assets';
+import Base from '../layouts/Base.astro';
+import Nav from '../components/Nav.astro';
+import Hero from '../components/Hero.astro';
+import HandoffChain from '../components/HandoffChain.astro';
+import DownloadCard from '../components/DownloadCard.astro';
+import Footer from '../components/Footer.astro';
+import widget from '../assets/widget.png';
+import { RELEASES } from '../config';
+
+const title = 'BatonPass — hand off a Claude Code chat before it runs out of room';
+const description =
+  'A tray widget that shows how full every Claude Code chat is, and hands one off to a fresh session in a new terminal before the context window fills up. Local-only, no sign-in, no API key.';
+---
+
+<Base title={title} description={description}>
+  <Nav />
+  <Hero />
+
+  <!-- The two halves of the app, stated plainly before any detail. -->
+  <section id="what" class="section-line">
+    <div class="shell">
+      <div class="two-up">
+        <article class="panel">
+          <h3 class="eyebrow">See the ceiling coming</h3>
+          <p class="body">
+            Every chat you have touched in the last 24 hours, with a bar showing how much of its
+            context window is gone. The bar turns amber, orange and red as it fills — and the tray
+            tooltip reports the <em>fullest</em> chat, not the most recent one, because the chat in
+            trouble is rarely the one in front of you.
+          </p>
+          <p class="body dim">
+            Read from your own transcripts, so the number is the real one not an estimate.
+          </p>
+        </article>
+
+        <article class="panel">
+          <h3 class="eyebrow">Move the work, not just the files</h3>
+          <p class="body">
+            One click asks the chat to summarise itself, saves that summary, opens a fresh session
+            in a new terminal in the same folder, and stops the old one. The new session starts
+            already knowing what the old one knew.
+          </p>
+          <p class="body dim">
+            The summary is written by the chat itself not scraped from the transcript by this app.
+          </p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="shot section-line">
+    <div class="shot-glow" aria-hidden="true"></div>
+    <div class="shell shot-inner">
+      <Image
+        class="shot-img"
+        src={widget}
+        alt="The BatonPass widget listing three active chats, each with a context bar showing how full it is. One is marked 'terminal closed' and offers a button to reopen it."
+        width={672}
+        densities={[1, 2]}
+      />
+      <div class="shot-notes">
+        <div class="note-row">
+          <span class="dot" aria-hidden="true"></span>
+          <p><strong>The bar is the whole interface.</strong> Tokens used, the model's real window, and the percentage between them.</p>
+        </div>
+        <div class="note-row">
+          <span class="dot amber" aria-hidden="true"></span>
+          <p><strong>Colour warns proportionally.</strong> Amber at 40%, orange at 60%, red at 80%, of that model's window, so a 200k model warns earlier in absolute terms.</p>
+        </div>
+        <div class="note-row">
+          <span class="dot dim" aria-hidden="true"></span>
+          <p><strong>Closed a terminal by accident?</strong> Chats with no process left show <span class="mono">terminal closed</span> and grow a button that reopens them where they were.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- The ordering guarantee. This is the part worth trusting the app over. -->
+  <section id="how" class="section-line">
+    <div class="shell how">
+      <div class="how-copy">
+        <p class="eyebrow">How a handoff works</p>
+        <h2>Every step that can<br /><span class="grad">fail runs first</span></h2>
+        <p class="lede">
+          A handoff touches real things: it opens windows and stops processes. So the order is the
+          design. Nothing irreversible happens until everything that could go wrong already has.
+        </p>
+        <p class="body dim">
+          A summary that comes back empty writes no file and kills nothing. A terminal that won't
+          open leaves the summary on disk <em>and</em> leaves the old chat running and clicking
+          again retries just that step, without paying for the summary twice.
+        </p>
+      </div>
+      <div class="how-chain">
+        <HandoffChain />
+      </div>
+    </div>
+  </section>
+
+  <!-- The strongest differentiator, so it gets a section rather than a bullet. -->
+  <section id="local" class="section-line local">
+    <div class="glow" aria-hidden="true"></div>
+    <div class="shell local-inner">
+      <p class="eyebrow">Local by design</p>
+      <h2>Nothing <span class="grad">leaves your machine</span></h2>
+      <p class="lede center">
+        BatonPass reads the session transcripts Claude Code already writes to
+        <code class="mono">~/.claude</code>. There is no sign-in, no API key, and no networking code
+        in the app.
+      </p>
+      <ul class="facts">
+        <li><span class="mono tag">reads</span> your local transcripts, when their mtime changes</li>
+        <li><span class="mono tag">writes</span> handoff summaries you can open and read</li>
+        <li><span class="mono tag">never</span> sends a single request anywhere</li>
+      </ul>
+    </div>
+  </section>
+
+  <section id="download" class="section-line">
+    <div class="shell">
+      <p class="eyebrow">Download</p>
+      <h2>Get <span class="grad">BatonPass</span></h2>
+      <p class="lede">
+        Free and open source. Needs the Claude Code CLI already installed — BatonPass reads what it
+        writes and launches it for you.
+      </p>
+
+      <div class="downloads">
+        <DownloadCard
+          platform="Windows"
+          detail="Windows 10 and 11. Opens chats in Windows Terminal, Git Bash or Command Prompt."
+          formats="installer · portable"
+          href={RELEASES}
+        />
+        <DownloadCard
+          platform="macOS"
+          detail="Opens chats in Terminal.app or iTerm2. Needs Automation permission on first launch."
+          formats="dmg"
+          href={RELEASES}
+        />
+      </div>
+    </div>
+  </section>
+
+  <Footer />
+</Base>
+
+<style>
+  .body {
+    margin-top: 0.9rem;
+    color: var(--text);
+    font-size: 1rem;
+  }
+
+  .dim {
+    color: var(--text-dim);
+  }
+
+  .two-up {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 1.25rem;
+  }
+
+  .shot {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .shot-glow {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse 45% 55% at 30% 50%, rgb(18 163 125 / 0.25), transparent 70%);
+    pointer-events: none;
+  }
+
+  .shot-inner {
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+    gap: clamp(2rem, 5vw, 4rem);
+    align-items: center;
+  }
+
+  .shot-img {
+    width: 100%;
+    height: auto;
+    border-radius: 14px;
+    /* The window is frosted and semi-transparent, so it needs something behind
+       it on the page the way it has the desktop behind it on screen. */
+    box-shadow: 0 40px 90px -30px rgb(0 0 0 / 0.9);
+  }
+
+  .shot-notes {
+    display: grid;
+    gap: 1.4rem;
+  }
+
+  .note-row {
+    display: flex;
+    gap: 0.9rem;
+    align-items: flex-start;
+  }
+
+  .note-row p {
+    font-size: 0.98rem;
+    color: var(--text-dim);
+  }
+
+  .note-row strong {
+    color: var(--ink);
+    font-weight: 600;
+  }
+
+  .dot {
+    flex: 0 0 auto;
+    width: 10px;
+    height: 10px;
+    margin-top: 0.45rem;
+    border-radius: 999px;
+    background: var(--accent-bright);
+    box-shadow: 0 0 12px rgb(62 232 160 / 0.8);
+  }
+
+  .dot.amber {
+    background: var(--status-warning);
+    box-shadow: 0 0 12px rgb(250 178 25 / 0.7);
+  }
+
+  .dot.dim {
+    background: rgb(255 255 255 / 0.35);
+    box-shadow: none;
+  }
+
+  @media (max-width: 900px) {
+    .shot-inner {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .how {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+    gap: clamp(2rem, 5vw, 4rem);
+    align-items: start;
+  }
+
+  .how-copy .lede {
+    margin-top: 1.25rem;
+  }
+
+  .how-copy .body {
+    margin-top: 1.25rem;
+  }
+
+  @media (max-width: 900px) {
+    .how {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .local {
+    position: relative;
+    overflow: hidden;
+    text-align: center;
+  }
+
+  .local .glow {
+    position: absolute;
+    inset: auto 0 -60% 0;
+    height: 640px;
+    background: radial-gradient(
+      ellipse 50% 50% at 50% 60%,
+      rgb(46 230 197 / 0.24),
+      transparent 68%
+    );
+    pointer-events: none;
+  }
+
+  .local-inner {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .center {
+    text-align: center;
+    margin-top: 1.5rem;
+  }
+
+  code {
+    background: rgb(255 255 255 / 0.07);
+    border-radius: 5px;
+    padding: 0.1em 0.4em;
+    font-size: 0.9em;
+  }
+
+  .facts {
+    list-style: none;
+    margin: 2.5rem 0 0;
+    padding: 0;
+    display: grid;
+    gap: 0.6rem;
+    text-align: left;
+    width: min(560px, 100%);
+    color: var(--text-dim);
+    font-size: 0.98rem;
+  }
+
+  .facts li {
+    display: flex;
+    gap: 0.9rem;
+    align-items: baseline;
+    padding: 0.7rem 1rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: rgb(255 255 255 / 0.02);
+  }
+
+  .tag {
+    flex: 0 0 auto;
+    width: 4.5rem;
+    font-size: 0.75rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent-bright);
+  }
+
+  .downloads {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.25rem;
+    margin-top: 2.5rem;
+  }
+
+  #download .lede {
+    margin-top: 1.25rem;
+  }
+
+  .note {
+    margin-top: 1.5rem;
+    font-size: 0.9rem;
+  }
+</style>

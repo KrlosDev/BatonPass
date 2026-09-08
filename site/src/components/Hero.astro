@@ -1,0 +1,122 @@
+---
+import { Image } from 'astro:assets';
+import logo from '../assets/logo.png';
+import { RELEASES, REPO } from '../config';
+---
+
+<section id="top" class="hero">
+  <div class="glow" aria-hidden="true"></div>
+  <div class="shell hero-inner">
+    <Image class="logo" src={logo} alt="BatonPass" width={360} densities={[1, 2]} loading="eager" />
+
+    <h1>
+      Never lose a chat to a<br />
+      <span class="grad">full context window</span>
+    </h1>
+
+    <p class="lede">
+      A tray widget that shows how full every Claude Code chat is and hands one off to a fresh
+      session in a new terminal before it runs out of room..
+    </p>
+
+    <div class="actions">
+      <a class="btn primary" href={RELEASES} rel="noopener">Download for Windows</a>
+      <a class="btn" href={RELEASES} rel="noopener">Download for macOS</a>
+      <a class="btn ghost" href={REPO} rel="noopener">View source</a>
+    </div>
+
+    <p class="fineprint mono">no sign-in · no API key · no network calls</p>
+  </div>
+</section>
+
+<style>
+  .hero {
+    position: relative;
+    padding-block: clamp(3rem, 8vw, 1rem) clamp(4rem, 9vw, 7rem);
+    overflow: hidden;
+    text-align: center;
+  }
+
+  /* The one big light source on the page. Sits behind the logo so the artwork's
+     own glow has something to bloom into. */
+  .glow {
+    position: absolute;
+    inset: -40% 0 auto;
+    height: 900px;
+    background: radial-gradient(
+      ellipse 55% 50% at 50% 45%,
+      rgb(18 163 125 / 0.42),
+      rgb(18 163 125 / 0.07) 45%,
+      transparent 70%
+    );
+    pointer-events: none;
+  }
+
+  .hero-inner {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+  }
+
+  .logo {
+    width: min(360px, 74vw);
+    height: auto;
+  }
+
+  .lede {
+    text-align: center;
+  }
+
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.75rem;
+    margin-top: 0.5rem;
+  }
+
+  .btn {
+    display: inline-block;
+    padding: 0.85rem 1.5rem;
+    border-radius: 999px;
+    border: 1px solid var(--border-bright);
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.98rem;
+    color: var(--ink);
+    background: rgb(255 255 255 / 0.03);
+    transition:
+      transform 140ms ease,
+      background 140ms ease,
+      border-color 140ms ease;
+  }
+
+  .btn:hover {
+    transform: translateY(-2px);
+    background: rgb(62 232 160 / 0.12);
+  }
+
+  .btn.primary {
+    background: linear-gradient(100deg, var(--accent-bright), var(--accent));
+    border-color: transparent;
+    color: #04120d;
+    box-shadow: 0 12px 40px -12px rgb(62 232 160 / 0.6);
+  }
+
+  .btn.primary:hover {
+    background: linear-gradient(100deg, var(--accent-cyan), var(--accent-bright));
+  }
+
+  .btn.ghost {
+    border-color: var(--border);
+    color: var(--text-dim);
+  }
+
+  .fineprint {
+    font-size: 0.82rem;
+    color: var(--text-dim);
+    letter-spacing: 0.02em;
+  }
+</style>

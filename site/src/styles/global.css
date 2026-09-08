@@ -1,0 +1,153 @@
+/* The palette is the app's own (renderer/style.css), so the site and the thing
+   it is selling agree on what green means. The ground is darker than the app's
+   panel, which is what lets panels read as raised against it. */
+:root {
+  --accent: #12a37d;
+  --accent-bright: #3ee8a0;
+  --accent-cyan: #2ee6c5;
+
+  --ground: #0b0c0e;
+  --ground-soft: #101216;
+  --panel: #17181c;
+
+  --ink: #ffffff;
+  --text: rgb(255 255 255 / 0.92);
+  --text-dim: rgb(255 255 255 / 0.62);
+  --border: rgb(255 255 255 / 0.1);
+  --border-bright: rgb(62 232 160 / 0.35);
+
+  /* Fixed, and the only place warm colour appears - same rule as the app. */
+  --status-warning: #fab219;
+  --status-serious: #ec835a;
+  --status-critical: #d03b3b;
+
+  --radius: 12px;
+  --radius-lg: 20px;
+
+  --font-display: 'Space Grotesk Variable', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono Variable', ui-monospace, monospace;
+
+  --shell: min(1120px, 100% - 3rem);
+
+  color-scheme: dark;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  background: var(--ground);
+  color: var(--text);
+  font-family: var(--font-display);
+  font-size: 17px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+h1,
+h2,
+h3 {
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+  margin: 0;
+  font-weight: 700;
+}
+
+h1 {
+  font-size: clamp(2.6rem, 7vw, 5rem);
+}
+
+h2 {
+  font-size: clamp(2rem, 4.6vw, 3.2rem);
+}
+
+h3 {
+  font-size: 1.2rem;
+  letter-spacing: -0.01em;
+}
+
+p {
+  margin: 0;
+}
+
+a {
+  color: inherit;
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* --- shared utilities --------------------------------------------------- */
+
+.shell {
+  width: var(--shell);
+  margin-inline: auto;
+}
+
+/* The one gradient, reused everywhere so the accent reads as a single system. */
+.grad {
+  background: linear-gradient(100deg, var(--accent-cyan), var(--accent-bright) 45%, var(--accent));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--accent-bright);
+  margin-bottom: 1rem;
+}
+
+.lede {
+  font-size: clamp(1.05rem, 1.7vw, 1.3rem);
+  color: var(--text-dim);
+  max-width: 62ch;
+}
+
+.panel {
+  background: linear-gradient(180deg, rgb(255 255 255 / 0.04), rgb(255 255 255 / 0.01));
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1.75rem;
+}
+
+.mono {
+  font-family: var(--font-mono);
+}
+
+section {
+  padding-block: clamp(4rem, 9vw, 7.5rem);
+  position: relative;
+}
+
+/* Keeps a section's own glow from painting over the one above it. */
+.section-line {
+  border-top: 1px solid var(--border);
+}

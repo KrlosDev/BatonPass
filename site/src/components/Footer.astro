@@ -1,0 +1,69 @@
+---
+import { AUTHOR, REPO } from '../config';
+const year = new Date().getFullYear();
+---
+
+<footer class="footer section-line">
+  <div class="shell inner">
+    <p class="left">
+      <span class="mark mono">BatonPass</span>
+      <span class="dim">— built by {AUTHOR}</span>
+    </p>
+    <nav class="right">
+      <a href={REPO} rel="noopener">GitHub</a>
+      <a href={`${REPO}/releases`} rel="noopener">Releases</a>
+      <a href={`${REPO}/issues`} rel="noopener">Issues</a>
+    </nav>
+  </div>
+  <p class="shell copyright dim">© {year} {AUTHOR}. Not affiliated with Anthropic.</p>
+</footer>
+
+<style>
+  .footer {
+    padding-block: 2.5rem 3.5rem;
+  }
+
+  .inner {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  .left {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    font-size: 0.95rem;
+  }
+
+  .mark {
+    font-weight: 600;
+    color: var(--accent-bright);
+  }
+
+  .dim {
+    color: var(--text-dim);
+  }
+
+  .right {
+    display: flex;
+    gap: 1.4rem;
+    font-size: 0.95rem;
+  }
+
+  .right a {
+    color: var(--text-dim);
+    text-decoration: none;
+  }
+
+  .right a:hover {
+    color: var(--ink);
+  }
+
+  .copyright {
+    margin-top: 1.5rem;
+    font-size: 0.82rem;
+  }
+</style>

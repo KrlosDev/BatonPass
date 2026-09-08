@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en" data-window="delete-confirm">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline';" />
+    <title>Delete chat</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="panel delete-confirm-panel" role="dialog" aria-modal="true" aria-labelledby="delete-confirm-title">
+      <div class="panel-content" id="delete-confirm-content">
+        <div class="delete-confirm-header">
+          <div class="delete-confirm-icon" aria-hidden="true">⚠</div>
+          <h1 id="delete-confirm-title">Delete this chat?</h1>
+          <button id="delete-confirm-close" class="delete-confirm-close" type="button" aria-label="Close">✕</button>
+        </div>
+
+        <div class="delete-confirm-body">
+          <p id="delete-confirm-message" class="delete-confirm-target"></p>
+          <p id="delete-confirm-project" class="delete-confirm-project"></p>
+          <p id="delete-confirm-detail" class="delete-confirm-detail"></p>
+          <p class="delete-confirm-warning-text">This cannot be undone.</p>
+        </div>
+
+        <div class="delete-confirm-footer">
+          <button id="delete-confirm-cancel" class="delete-confirm-cancel" type="button">Cancel</button>
+          <button id="delete-confirm-action" class="delete-confirm-action" type="button">Delete permanently</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="shared.js"></script>
+    <script src="delete-confirm.js"></script>
+  </body>
+</html>

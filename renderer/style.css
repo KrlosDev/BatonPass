@@ -1,0 +1,665 @@
+/* The windows are transparent and blurred natively, so --glass-tint is what
+   turns that untinted blur into a readable panel. Keep it translucent. */
+:root {
+  color-scheme: light dark;
+  --bg: transparent;
+
+  /* The one colour the user owns, re-set on <html> by applyAccent(); the
+     default here keeps the frame before that runs from being unstyled. */
+  --data-color: #12a37d;
+  --data-ink: #ffffff;
+
+  /* Dark is the default arm; the light arm is the media query below. Every
+     other ink token is an alpha of --ink, so the two arms stay one edit. */
+  --ink: #ffffff;
+  --panel: rgba(23, 24, 28, 0.921);
+
+  /* The frost laid over the native blur. Lower alpha shows more wallpaper;
+     much lower and text starts fighting a busy one. */
+  --glass-tint: rgba(23, 24, 28, 0.62);
+  /* Advisory text. The status amber is 9.77:1 on the dark card but 1.71:1 on
+     the light one, so the light arm drops to a deep amber (6.45:1) instead. */
+  --notice: #fab219;
+
+  --text: var(--ink);
+  --text-dim: rgb(from var(--ink) r g b / 0.72);
+  --border: rgb(from var(--ink) r g b / 0.15);
+  --accent-track: rgb(from var(--ink) r g b / 0.12);
+  --accent: var(--data-color);
+
+  /* A <select>'s popup is a native surface that paints itself solid, so the
+     field needs an opaque colour that flips with the theme. */
+  --field-bg: #2a2d33;
+
+  /* The only place amber or red appears, so they always mean "close to a
+     limit". Fixed rather than themed: they carry meaning, not taste. */
+  --status-warning: #fab219;
+  --status-serious: #ec835a;
+  --status-critical: #d03b3b;
+
+  --radius: 8px;
+}
+
+/* Windows light mode leaves the blur pale, which would put white text on a
+   near-white panel; the frost has to follow, being what paints the surface. */
+@media (prefers-color-scheme: light) {
+  :root {
+    --ink: #0b0b0b;
+    --panel: rgba(250, 250, 248, 0.93);
+    --glass-tint: rgba(250, 250, 248, 0.62);
+    --notice: #7a5200;
+    --field-bg: #ffffff;
+  }
+}
+
+:root[data-platform="darwin"] {
+  --radius: 12px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+body {
+  margin: 0;
+  color: var(--text);
+  font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 12.5px;
+  user-select: none;
+  background: transparent !important;
+  overflow: hidden;
+}
+
+button {
+  -webkit-app-region: no-drag;
+}
+
+.panel {
+  max-height: 100vh;
+  width: 100%;
+  border-radius: var(--radius);
+}
+
+/* Frost: what makes DWM's untinted blur read as a panel rather than a smear.
+   Rounding is CSS, since a transparent window loses DWM's own. */
+.panel {
+  overflow: hidden;
+  /* A hairline lip, the way acrylic catches light at its edge. Inset only:
+     the window is clipped, so an outer shadow would have nowhere to draw. */
+  box-shadow: inset 0 0 0 1px rgb(from var(--ink) r g b / 0.10);
+}
+
+.panel-content {
+  padding: 13px 15px 9px;
+  max-height: 100vh;
+  width: 100%;
+  overflow-y: auto;
+
+  border-radius: var(--radius);
+
+  /* The frost. Translucent on purpose - this is the only thing between the
+     text and the blurred desktop. */
+  background-color: var(--glass-tint);
+
+  /* macOS native smooth-rounding rendering curve */
+  -electron-corner-smoothing: continuous;
+}
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+/* The widget's header is its drag handle. Only the header: on <body> the OS
+   would eat scrollbar drags and wheel events. */
+:root[data-window="widget"] .panel-header {
+  -webkit-app-region: drag;
+  cursor: grab;
+}
+
+:root[data-window="widget"] .panel-header:active {
+  cursor: grabbing;
+}
+
+.panel-header h1 {
+  font-size: 15px;
+  font-weight: 600;
+  margin: 0;
+}
+
+/* Close, refresh and the per-row handoff glyph are the same control: an icon
+   that lights up on hover. */
+#settings-close,
+#refresh-btn,
+.handoff-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  font-size: 15px;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 6px;
+}
+
+#settings-close:hover,
+#refresh-btn:hover,
+.handoff-btn:hover:not(:disabled) {
+  background: var(--accent-track);
+  color: var(--text);
+}
+
+/* Sits below the drag handle, so these have to be <button>s - the global
+   no-drag rule covers them and nothing else here would. */
+.tab-strip {
+  display: flex;
+  gap: 4px;
+  margin: 2px 0 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.tab {
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  padding: 4px 8px 6px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-dim);
+  cursor: pointer;
+}
+
+.tab:hover {
+  color: var(--text);
+}
+
+.tab.is-selected {
+  color: var(--text);
+  border-bottom-color: var(--data-color);
+}
+
+.session-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 4px;
+}
+
+/* A handed-over row has no bar to sit beside, so its buttons go hard right
+   instead of trailing a track that isn't there. */
+.session-actions {
+  justify-content: flex-end;
+}
+
+.session-row {
+  --bar-color: var(--data-color);
+}
+
+/* Bands set in widget.js (usageStatus). The percentage beside the bar is the
+   label, so the colour reinforces the number rather than carrying it alone. */
+.session-row.is-good { --bar-color: var(--data-color); }
+.session-row.is-warning { --bar-color: var(--status-warning); }
+.session-row.is-serious { --bar-color: var(--status-serious); }
+.session-row.is-critical { --bar-color: var(--status-critical); }
+
+.session-title {
+  margin: 0;
+  font-size: 12.5px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The most recent chat is the closest a separate process gets to "the one
+   you're in", so it gets a rule rather than a label that would overstate it. */
+.session-row.is-current .session-title {
+  padding-left: 7px;
+  border-left: 2px solid var(--data-color);
+  margin-left: -9px;
+}
+
+.session-meta {
+  margin: 1px 0 5px;
+  font-size: 11px;
+  color: var(--text-dim);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.session-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11.5px;
+}
+
+.session-count {
+  flex: 0 0 auto;
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Carries the status colour along with the bar, so the number and the bar
+   never disagree about how full the window is. */
+.session-pct {
+  flex: 0 0 32px;
+  text-align: right;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--bar-color, var(--data-color));
+}
+
+/* Sits at the end of the bar row. The track is the only flexible child, so the
+   button costs it ~30px and nothing else in the row reflows. */
+.handoff-btn {
+  flex: 0 0 auto;
+  font-size: 13px;
+  line-height: 1;
+  padding: 3px 5px;
+}
+
+.handoff-btn:disabled {
+  cursor: default;
+}
+
+.handoff-btn.is-done {
+  color: var(--data-color);
+}
+
+.handoff-btn.is-failed {
+  color: var(--status-critical);
+}
+
+/* Only ever reads as destructive on hover: it sits on every row, and a column
+   of red crosses would shout over the thing the panel is actually for. */
+.danger-btn:hover:not(:disabled) {
+  background: var(--status-critical);
+  color: #fff;
+}
+
+/* The dialog is its own window sized to this content, so the panel IS the
+   window - no backdrop layer, and DWM does the blur as it does elsewhere. */
+.delete-confirm-panel {
+  width: 100%;
+}
+
+.delete-confirm-panel .panel-content {
+  /* Taller padding than the widget's: this one is read, not scanned. */
+  padding: 15px 16px 14px;
+  /* The window is sized to this content, so a scrollbar would be a gutter for
+     nothing. The wheel still scrolls past the max height. */
+  scrollbar-width: none;
+}
+
+.delete-confirm-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 11px;
+  border-bottom: 1px solid var(--border);
+}
+
+.delete-confirm-icon {
+  display: inline-flex;
+  width: 22px;
+  height: 22px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--status-warning);
+  color: #1a1a1a;
+  font-size: 13px;
+  font-weight: 800;
+  flex: 0 0 auto;
+}
+
+.delete-confirm-header h1 {
+  margin: 0;
+  flex: 1;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.delete-confirm-close {
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 6px;
+}
+
+.delete-confirm-close:hover {
+  background: var(--accent-track);
+  color: var(--text);
+}
+
+.delete-confirm-body {
+  padding: 13px 0 0;
+}
+
+/* The chat's own name, the one thing that can't be misread. User text, so it
+   wraps rather than widening the window. */
+.delete-confirm-target {
+  margin: 0 0 6px;
+  font-size: 14px;
+  line-height: 1.35;
+  font-weight: 700;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+.delete-confirm-project {
+  margin: 0 0 10px;
+  color: var(--text-dim);
+  font-size: 12px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.delete-confirm-detail {
+  margin: 0;
+  color: var(--text-dim);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.delete-confirm-warning-text {
+  margin: 10px 0 0;
+  color: var(--status-critical);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.delete-confirm-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-top: 15px;
+}
+
+.delete-confirm-cancel,
+.delete-confirm-action {
+  border-radius: var(--radius);
+  padding: 7px 13px;
+  font: inherit;
+  font-size: 12.5px;
+  cursor: pointer;
+}
+
+.delete-confirm-cancel {
+  border: 1px solid var(--border);
+  background: var(--accent-track);
+  color: var(--text);
+}
+
+.delete-confirm-cancel:hover {
+  background: rgb(from var(--ink) r g b / 0.2);
+}
+
+/* The destructive choice carries the red outright - unlike the row button in
+   the widget, this button exists only to be the irreversible one. */
+.delete-confirm-action {
+  border: 1px solid var(--status-critical);
+  background: var(--status-critical);
+  color: #fff;
+  font-weight: 600;
+}
+
+.delete-confirm-action:hover {
+  background: #b93232;
+  border-color: #b93232;
+}
+
+.delete-confirm-cancel:focus-visible,
+.delete-confirm-action:focus-visible,
+.delete-confirm-close:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.model-bar-track {
+  flex: 1;
+  height: 5px;
+  border-radius: 999px;
+  background: var(--accent-track);
+  overflow: hidden;
+}
+
+/* display:block is load-bearing: this is a <span>, and an inline box ignores
+   both width and height, so the fill never paints. */
+.model-bar-fill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--bar-color, var(--data-color));
+  transition: width 300ms ease;
+}
+
+.empty-hint {
+  color: var(--text-dim);
+  font-size: 12px;
+}
+
+.panel-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+  color: var(--text-dim);
+  font-size: 11px;
+}
+
+#refresh-btn.spinning {
+  animation: spin 0.6s linear;
+}
+
+/* A handoff runs for tens of seconds, so its spinner repeats rather than
+   playing once like the refresh glyph's. */
+.handoff-btn.spinning {
+  animation: spin 1.1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Settings is its own tray-anchored window now, not a modal over the widget,
+   so it wears the same .panel chrome and needs no card or backdrop. */
+.settings-group {
+  margin: 14px 0 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* Only the panel's first group loses its top margin. Scoped to direct children,
+   or the Startup heading would collapse against the row above it. */
+.panel-content > .settings-group:first-of-type {
+  margin-top: 0;
+}
+
+.widget-toggles {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.widget-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 4px 6px;
+  border-radius: 6px;
+  font-size: 12px;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.widget-toggle:hover {
+  background: var(--accent-track);
+}
+
+.widget-toggle input {
+  width: 13px;
+  height: 13px;
+  margin: 0;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.settings-help {
+  margin: 0 0 12px;
+  font-size: 11.5px;
+  color: var(--text-dim);
+  line-height: 1.4;
+}
+
+/* Sits under the toggle it belongs to rather than above the next group, so the
+   margin goes on the other side. */
+.startup-help {
+  margin: 6px 6px 0;
+}
+
+.startup-help,
+.color-help {
+  color: var(--notice);
+}
+
+.settings-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.settings-actions button {
+  background: var(--accent-track);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+/* --data-ink, not white: the accent is user-chosen, so the label has to flip
+   to dark type when they pick something light. */
+.settings-actions button.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--data-ink);
+}
+
+.color-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 6px;
+  font-size: 12px;
+}
+
+.color-row + .color-row {
+  margin-top: 2px;
+}
+
+.color-row label {
+  flex: 1;
+  cursor: pointer;
+}
+
+.color-row input[type="color"] {
+  width: 34px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: none;
+  cursor: pointer;
+}
+
+.select-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 6px;
+  font-size: 12px;
+}
+
+.select-row label {
+  flex: 1;
+}
+
+.select-row select {
+  max-width: 62%;
+  padding: 4px 6px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  /* Opaque, not the frosted --accent-track: a native popup shows white on
+     white if the fill is see-through. See --field-bg. */
+  background-color: var(--field-bg);
+  color: var(--text);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+/* The popped-open list. Named explicitly so the options match the closed control
+   rather than falling back to the browser's default white. */
+.select-row select option {
+  background-color: var(--field-bg);
+  color: var(--text);
+}
+
+.select-row select:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.color-hex {
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+  font-size: 11px;
+  min-width: 58px;
+  text-align: right;
+}
+
+/* Cancels the button's own padding so its text lines up with the row labels
+   above it rather than sitting 4px proud of them. */
+.color-row .link-btn {
+  margin-left: -4px;
+}
+
+.link-btn {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  font-size: 11.5px;
+  padding: 2px 4px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.link-btn:hover {
+  background: var(--accent-track);
+  color: var(--text);
+}

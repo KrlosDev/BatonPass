@@ -1,0 +1,7 @@
+node_modules/
+dist/
+out/
+.DS_Store
+
+# Astro's build cache and generated types
+.astro/
