@@ -584,11 +584,30 @@ Assets are named `BatonPass-<version>-<os>-<arch>-<kind>.<ext>`, set per target
 in [`package.json`](package.json) - electron-builder's defaults put spaces in
 `.exe` names, which turn into `%20` in a download URL.
 
-**The builds are unsigned.** There is no Apple Developer certificate and no
-Windows code-signing certificate wired in, so SmartScreen will warn on the
-`.exe` and macOS will refuse the `.dmg` until it is opened via right-click →
-Open. Signing is the one thing that cannot be added from the repo alone; it
-needs paid certificates and a pair of repository secrets.
+**The builds carry no developer certificate.** There is no Apple Developer
+certificate and no Windows code-signing certificate wired in, so SmartScreen
+warns on the `.exe`, and macOS blocks the first launch of the `.dmg` until it is
+allowed from System Settings → Privacy & Security → Open Anyway. (Right-click →
+Open, the old way round it, stopped working in macOS 15.) Certificates are the
+one thing that cannot be added from the repo alone; they cost money and need a
+pair of repository secrets.
+
+The macOS builds are **ad-hoc signed** regardless, by
+[`scripts/adhoc-sign.js`](scripts/adhoc-sign.js) on electron-builder's
+`afterPack` hook. Without it, electron-builder finds no identity, skips signing
+altogether, and ships a bundle holding nothing but the linker signature on
+Electron's own binary — no sealed resources at all. macOS reads that mismatch as
+tampering rather than as an unknown developer, and says *"BatonPass is damaged
+and can't be opened"*, offering only Move to Trash. That is a much worse wall
+than the unidentified-developer prompt, and it is entirely self-inflicted: an
+ad-hoc signature seals the bundle and puts the ordinary prompt back.
+
+The hook runs on `afterPack` rather than `afterSign` because `afterSign` never
+fires when there is no identity to sign with — precisely the case it exists for.
+electron-builder's own signing step runs afterwards, so a real certificate, once
+there is one, still wins. It checks its own work with `codesign --verify --deep
+--strict` and fails the build if the seal is broken, so a broken bundle cannot
+reach a release quietly again.
 
 Icons live in `assets/` and are **derived from source artwork**, not hand-
 exported. `npm run icons` reads `assets/tray_icon.png`, crops the artwork out of
