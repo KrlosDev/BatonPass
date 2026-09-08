@@ -83,12 +83,18 @@ jobs:
           |---|---|
           | `-win-x64-setup.exe` | Windows, installed |
           | `-win-x64-portable.exe` | Windows, no install |
-          | `-mac-arm64.dmg` | Apple Silicon |
+          | `-mac-arm64.dmg` | Apple Silicon (M1 and later) |
           | `-mac-x64.dmg` | Intel Mac |
 
-          **These builds are unsigned.** On Windows SmartScreen will warn: More
-          info -> Run anyway. On macOS the first launch must be right-click ->
-          Open; a double-click is blocked.
+          On an Apple Silicon Mac take the `arm64` file. The `x64` one installs
+          without complaint and then runs under Rosetta, so it is easy to pick
+          by accident and slower once you have.
+
+          **These builds carry no developer certificate.** Windows SmartScreen
+          warns on the `.exe`: More info -> Run anyway. macOS blocks the first
+          launch: open System Settings -> Privacy & Security, scroll to the
+          message naming BatonPass, and press Open Anyway. Right-click -> Open
+          has not worked since macOS 15.
           EOF
           gh release create "$TAG" \
             --draft \
