@@ -1,4 +1,4 @@
-const { app, Tray, Menu, BrowserWindow, ipcMain, nativeImage, screen } = require('electron');
+const { app, Tray, Menu, BrowserWindow, ipcMain, nativeImage, screen, Notification } = require('electron');
 const path = require('path');
 const { getActiveSessions } = require('./lib/sessions');
 const blurBehind = require('./lib/blurBehind');
@@ -10,11 +10,10 @@ const sessionFiles = require('./lib/sessionFiles');
 const terminal = require('./lib/terminal');
 const terminalMemory = require('./lib/terminalMemory');
 
-const POLL_INTERVAL_MS = 20 * 1000; // local file reads only, safe to poll often
+const POLL_INTERVAL_MS = 5 * 1000; // local file reads only, safe to poll often
 const WIDGET_WIDTH = 380;
 const WIDGET_MAX_HEIGHT = 630;
 const WIDGET_MIN_HEIGHT = 90;
-const WIDGET_SCREEN_MARGIN = 16;
 
 // Narrow enough to read in one line of sight; the height follows the copy,
 // which grows with the chat's name and project path.
@@ -26,6 +25,9 @@ const SETTINGS_WIDTH = 340;
 const SETTINGS_MAX_HEIGHT = 650;
 const SETTINGS_MIN_HEIGHT = 120;
 
+// Ascending, so the highest one a chat has passed is the newest to announce.
+const CONTEXT_THRESHOLDS = [40, 60, 80, 100];
+
 let tray = null;
 let widgetWindow = null;
 let settingsWindow = null;
@@ -34,6 +36,10 @@ let deleteConfirmResolver = null;
 let deleteConfirmArea = null;
 let pollTimer = null;
 let lastSessions = [];
+
+// sessionId -> highest threshold already announced, so each level fires once
+// and a chat that keeps filling doesn't re-notify on every 20s poll.
+const notifiedThresholds = new Map();
 
 let settingsPinned = false;
 
@@ -80,43 +86,6 @@ function applyBlurBehind(win) {
   blurBehind.roundCorners(win);
 }
 
-function isOnSomeDisplay({ x, y, width, height }) {
-  // Enough of the window has to land on a work area that the user can still
-  // grab it and drag it back.
-  const MIN_VISIBLE = 80;
-  return screen.getAllDisplays().some(({ workArea: wa }) => {
-    const overlapX = Math.min(x + width, wa.x + wa.width) - Math.max(x, wa.x);
-    const overlapY = Math.min(y + height, wa.y + wa.height) - Math.max(y, wa.y);
-    return overlapX >= MIN_VISIBLE && overlapY >= MIN_VISIBLE;
-  });
-}
-
-// A stored position is only honoured if it still lands on a display that
-// exists. Otherwise the widget is placed in the bottom-right of the primary display.
-function placeWidget() {
-  const { width, height } = widgetWindow.getBounds();
-  const saved = store.loadWidgetPosition();
-  if (saved && isOnSomeDisplay({ ...saved, width, height })) {
-    widgetWindow.setPosition(saved.x, saved.y);
-    return;
-  }
-  const { x, y, width: waWidth } = screen.getPrimaryDisplay().workArea;
-  widgetWindow.setPosition(
-    Math.round(x + waWidth - width - WIDGET_SCREEN_MARGIN),
-    Math.round(y + WIDGET_SCREEN_MARGIN)
-  );
-}
-
-// Only ever called after an automatic resize. A drag is the user's decision -
-// if they want the widget half off the edge, that's allowed.
-function keepWidgetOnScreen() {
-  const bounds = widgetWindow.getBounds();
-  const { workArea: wa } = screen.getDisplayMatching(bounds);
-  const x = Math.min(Math.max(bounds.x, wa.x), wa.x + wa.width - bounds.width);
-  const y = Math.min(Math.max(bounds.y, wa.y), wa.y + wa.height - bounds.height);
-  if (x !== bounds.x || y !== bounds.y) widgetWindow.setPosition(Math.round(x), Math.round(y));
-}
-
 function createWidget() {
   widgetWindow = new BrowserWindow({
     ...frostedWindowOptions(),
@@ -131,11 +100,6 @@ function createWidget() {
   applyBlurBehind(widgetWindow);
   widgetWindow.loadFile(path.join(__dirname, 'renderer', 'widget.html'));
 
-  widgetWindow.once('ready-to-show', () => {
-    placeWidget();
-    widgetWindow.show();
-  });
-
   // The first poll's send is lost if the renderer hasn't subscribed yet, which
   // would leave the panel on "Loading..." until the next 20s tick.
   widgetWindow.webContents.on('did-finish-load', () => {
@@ -144,11 +108,9 @@ function createWidget() {
     }
   });
 
-
-  widgetWindow.on('moved', () => {
-    const [x, y] = widgetWindow.getPosition();
-    store.setWidgetPosition({ x, y });
-  });
+  // A tray flyout: it re-anchors to the tray each time it opens and hides the
+  // moment it loses focus, so there's no free-floating position to remember.
+  widgetWindow.on('blur', () => widgetWindow.hide());
 }
 
 function createSettings() {
@@ -189,6 +151,13 @@ function showSettings() {
   positionNearTray(settingsWindow, tray.getBounds());
   settingsWindow.show();
   settingsWindow.focus();
+}
+
+function showWidget() {
+  if (!widgetWindow) createWidget();
+  positionNearTray(widgetWindow, tray.getBounds());
+  widgetWindow.show();
+  widgetWindow.focus();
 }
 
 function showDeleteConfirm(sessionId) {
@@ -262,12 +231,12 @@ function showDeleteConfirm(sessionId) {
   });
 }
 
-function toggleSettings() {
-  if (settingsWindow && settingsWindow.isVisible()) {
-    settingsWindow.hide();
+function toggleWidget() {
+  if (widgetWindow && widgetWindow.isVisible()) {
+    widgetWindow.hide();
     return;
   }
-  showSettings();
+  showWidget();
 }
 
 // Called before and after the window is sized to its copy, so the dialog ends
@@ -350,6 +319,41 @@ function learnTerminals(sessions) {
   }, 0);
 }
 
+// One notification per chat per level, fired only on the way up. The map holds
+// the highest level already announced, so a chat sitting at 85% won't re-notify
+// every poll, while one that climbs from 60% to 80% announces the 80% crossing.
+function notifyThresholdCrossings(sessions) {
+  if (!Notification.isSupported()) return;
+
+  // A chat that dropped off the list (handed over, forked away, or gone quiet)
+  // is re-armed: if it comes back it should be able to announce again.
+  const liveIds = new Set(sessions.map((session) => session.sessionId));
+  for (const id of notifiedThresholds.keys()) {
+    if (!liveIds.has(id)) notifiedThresholds.delete(id);
+  }
+
+  for (const session of sessions) {
+    const crossed = CONTEXT_THRESHOLDS.filter((level) => session.pct >= level);
+    if (crossed.length === 0) continue;
+
+    const highest = crossed[crossed.length - 1];
+    const alreadyNotified = notifiedThresholds.get(session.sessionId) || 0;
+    if (highest <= alreadyNotified) continue;
+
+    notifiedThresholds.set(session.sessionId, highest);
+    const body =
+      highest >= 100
+        ? 'Context window is full. Hand off to a fresh session.'
+        : 'Context is filling up. Consider handing off to a fresh session.';
+    const notification = new Notification({
+      title: `${session.title} - ${highest}% full`,
+      body,
+    });
+    notification.on('click', showWidget);
+    notification.show();
+  }
+}
+
 function refreshUsage() {
   try {
     // A fork is a means to an end, not a chat the user started, so it stays off
@@ -369,6 +373,7 @@ function refreshUsage() {
         terminalKind: (terminalMemory.recall(session.sessionId) || {}).kind || null,
       }));
     lastSessions = sessions;
+    notifyThresholdCrossings(sessions);
     learnTerminals(sessions);
     updateTrayTooltip(sessions);
     // The handed-over list rides along with the poll, so the other tab stays
@@ -404,6 +409,10 @@ function trayIconPath() {
 app.whenReady().then(() => {
   if (process.platform === 'darwin') app.dock.hide();
 
+  // Without this, Windows attributes notifications to the default Electron host
+  // instead of BatonPass, showing the wrong name and icon in the toast.
+  app.setAppUserModelId('dev.krlosdev.batonpass');
+
   installHandoffCommand();
 
   const dropped = store.pruneLegacyKeys();
@@ -413,7 +422,7 @@ app.whenReady().then(() => {
   // and resizing collapses them into one bitmap, losing the retina variant.
   tray = new Tray(nativeImage.createFromPath(trayIconPath()));
   tray.setToolTip('BatonPass - chat context');
-  tray.on('click', toggleSettings);
+  tray.on('click', toggleWidget);
 
   tray.on('right-click', () => tray.popUpContextMenu(buildTrayMenu()));
 
@@ -458,7 +467,8 @@ app.whenReady().then(() => {
     const win = BrowserWindow.fromWebContents(event.sender);
     if (win === widgetWindow) {
       fitToContent(win, contentHeight, WIDGET_MIN_HEIGHT, WIDGET_MAX_HEIGHT);
-      keepWidgetOnScreen();
+      // The flyout hangs off the tray, so its top edge moves as the height grows.
+      if (tray) positionNearTray(widgetWindow, tray.getBounds());
     } else if (win === settingsWindow) {
       fitToContent(win, contentHeight, SETTINGS_MIN_HEIGHT, SETTINGS_MAX_HEIGHT);
       // The flyout hangs above the tray on Windows, so its top edge moves
